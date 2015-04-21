@@ -33,10 +33,15 @@ def generate_csrf_token():
     return ''.join(random.choice(CSRF_CHARACTERS) for x in range(32))
 
 
-def generate_redirect_uri():
+def generate_redirect_uri(request):
     scheme = 'https' if USE_HTTPS else 'http'
     path = reverse('googleauth_callback')
-    return '%s://%s%s' % (scheme, CALLBACK_DOMAIN, path)
+
+    domain = CALLBACK_DOMAIN
+    if domain == "":
+        domain = request.META.get("HTTP_HOST", domain)
+
+    return '%s://%s%s' % (scheme, domain, path)
 
 
 #
@@ -51,7 +56,7 @@ def login(request):
         'client_id': CLIENT_ID,
         'response_type': 'code',
         'scope': 'openid email profile',
-        'redirect_uri': generate_redirect_uri(),
+        'redirect_uri': generate_redirect_uri(request),
         'state': csrf_token,
     }
 
@@ -73,7 +78,7 @@ def callback(request):
         'code': request.GET.get('code'),
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
-        'redirect_uri': generate_redirect_uri(),
+        'redirect_uri': generate_redirect_uri(request),
         'grant_type': 'authorization_code',
     }
 
